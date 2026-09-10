@@ -50,7 +50,7 @@
   .row button{width:auto;flex:1;padding:8px;font-size:12px}
 
   .chips{display:flex;gap:6px;margin-top:8px}
-  .chip{flex:1;padding:7px;font-size:11px;text-align:center;border-radius:8px;
+  .chip{flex:1;padding:7px 3px;font-size:10px;text-align:center;border-radius:8px;
         border:1px solid var(--line);color:var(--lo);cursor:pointer;
         letter-spacing:.08em;text-transform:uppercase}
   .chip.on{background:rgba(31,217,138,.13);border-color:var(--mint);color:var(--mint)}
@@ -81,8 +81,9 @@
     <div class="target" id="target">—</div>
     <div class="sub" id="targetSub"></div>
     <div class="chips" id="chips">
+      <div class="chip" data-mode="pdf">PDF</div>
       <div class="chip" data-mode="slides">Slides</div>
-      <div class="chip" data-mode="doc">Document</div>
+      <div class="chip" data-mode="doc">Doc</div>
       <div class="chip" data-mode="video">Video</div>
     </div>
   </div>

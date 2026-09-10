@@ -33,7 +33,10 @@ const KEY = {
 const MOVES = {
   slides: { next: 'ArrowRight', prev: 'ArrowLeft', first: 'Home', last: 'End', blank: 'KeyB' },
   doc:    { next: 'PageDown',   prev: 'PageUp',    first: 'Home', last: 'End', blank: null    },
-  video:  { next: 'ArrowRight', prev: 'ArrowLeft', first: 'Home', last: 'End', blank: 'KeyK'  }
+  video:  { next: 'ArrowRight', prev: 'ArrowLeft', first: 'Home', last: 'End', blank: 'KeyK'  },
+  // pdf drives the viewer by page number instead of by key; these are the
+  // fallback presses for anything the fragment navigation cannot express.
+  pdf:    { next: 'PageDown',   prev: 'PageUp',    first: 'Home', last: 'End', blank: null    }
 };
 
 const PROFILES = [
@@ -74,7 +77,7 @@ async function settings() {
 
 function detect(url = '') {
   if (/^file:\/\/.*\.pdf(\?|#|$)/i.test(url) || /\.pdf(\?|#|$)/i.test(url)) {
-    return { mode: 'doc', name: 'PDF' };
+    return { mode: 'pdf', name: 'PDF' };
   }
   for (const p of PROFILES) if (p.re.test(url)) return { mode: p.mode, name: p.name };
   return { mode: 'doc', name: 'Page' };
@@ -168,6 +171,32 @@ async function press(name) {
   return sendKeySynthetic(S.tabId, name);
 }
 
+/* ---------- pdf: move by page, not by viewport ----------------------- *
+ * Chrome opens PDFs fit to WIDTH, so a page is taller than the window and
+ * PageDown scrolls a screenful — landing halfway between two pages. Asking
+ * the viewer for a page number instead is exact at any zoom, and view=Fit
+ * sizes each page to the window so one tap shows one whole page.
+ * ------------------------------------------------------------------- */
+
+function pageFromUrl(url) {
+  const m = /[#&]page=(\d+)/.exec(url || '');
+  return m ? parseInt(m[1], 10) : null;
+}
+
+async function pdfGoto(n) {
+  const page = Math.max(1, n);
+  try {
+    const tab = await chrome.tabs.get(S.tabId);
+    const base = (tab.url || S.url).split('#')[0];
+    await chrome.tabs.update(S.tabId, { url: base + '#page=' + page + '&view=Fit' });
+    S.page = page;
+    return true;
+  } catch (e) {
+    console.warn('[ClassRemote] pdf navigation failed:', e && e.message);
+    return false;
+  }
+}
+
 /* ---------- blank / fullscreen -------------------------------------- */
 
 function blankOverlay() {
@@ -210,14 +239,16 @@ async function run(cmd) {
     if (cmd.n <= (S.lastN || 0)) return;   // replayed on reconnect — ignore
     S.lastN = cmd.n;
   }
-  S.holder = cmd.by || S.holder;
   S.lastAt = Date.now();
 
   const move = MOVES[S.mode] || MOVES.doc;
+  const pdf = S.mode === 'pdf';
+  if (pdf && S.page == null) S.page = 1;
   switch (cmd.a) {
-    case 'next':  await press(move.next); break;
-    case 'prev':  await press(move.prev); break;
-    case 'first': await press(move.first); break;
+    case 'next':  if (!(pdf && await pdfGoto(S.page + 1))) await press(move.next); break;
+    case 'prev':  if (!(pdf && await pdfGoto(S.page - 1))) await press(move.prev); break;
+    case 'first': if (!(pdf && await pdfGoto(1)))          await press(move.first); break;
+    // Nothing tells us the page count, so the end of a PDF is still a key press.
     case 'last':  await press(move.last); break;
     case 'blank': await doBlank(); break;
     case 'full':  await doFullscreen(); break;
@@ -254,7 +285,8 @@ async function publishState() {
     mode: S.mode,
     name: S.name,
     driver: S.driver,
-    holder: S.holder || null,
+    page: S.page || null,
+    lastAt: S.lastAt || null,
     t: Date.now()
   });
 }
@@ -317,10 +349,15 @@ async function startSession(tabId) {
     mode: target.mode,
     name: target.name,
     driver: ok ? 'debugger' : 'synthetic',
-    holder: null,
     lastN: 0,
     startedAt: Date.now()
   };
+  await saveState();
+
+  if (target.mode === 'pdf') {
+    S.page = pageFromUrl(tab.url) || 1;
+    await pdfGoto(S.page);          // same page, now fitted to the window
+  }
   await saveState();
 
   await dbPut('/sessions/' + code, { cmd: { a: 'hello', n: 0, t: Date.now() }, host: null });
@@ -385,7 +422,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
           await dbPut('/sessions/' + S.code + '/host', { up: false, t: Date.now() });
           S.code = makeCode();
           S.lastN = 0;
-          S.holder = null;
+          S.lastAt = null;
           await saveState();
           await dbPut('/sessions/' + S.code, { cmd: { a: 'hello', n: 0, t: Date.now() }, host: null });
           await publishState();

@@ -27,8 +27,7 @@ function paint() {
     document.getElementById('url').textContent = res.remoteUrl;
     document.getElementById('hint').className = 'hint';
     document.getElementById('hint').textContent =
-      S.holder ? (S.holder + ' has the remote.')
-               : 'Open it on your phone. Tap the bottom half to go forward.';
+      'Scan it with your phone camera. Tap the bottom half to go forward.';
     if (res.remoteUrl !== shown) { draw(res.remoteUrl); shown = res.remoteUrl; }
   });
 }

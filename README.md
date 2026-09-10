@@ -75,8 +75,8 @@ uses it.
 
 1. Open the PDF or deck in a tab, and start presenting.
 2. Click the extension icon → **Start session**.
-3. **Show big** puts a full-screen QR on the laptop. The student scans it,
-   types their name, and they have the remote.
+3. **Show big** puts a full-screen QR on the laptop. The student scans it and
+   they have the remote — no name to type, no app to install.
 4. **New code** kicks everyone off and issues a fresh one. Use it between
    presenters so the last person cannot keep clicking.
 5. **End session** detaches everything.
@@ -90,7 +90,7 @@ decks get the arrows, documents get the page keys.
 
 | On screen | Mode | Forward / back |
 |---|---|---|
-| PDF (Chrome viewer, local or online) | document | PageDown / PageUp |
+| PDF (Chrome viewer, local or online) | pdf | jumps to page N ± 1, fitted |
 | Google Slides | slides | → / ← |
 | PowerPoint & SharePoint | slides | → / ← |
 | Google Docs, Sheets, Office Online | document | PageDown / PageUp |
@@ -101,12 +101,28 @@ decks get the arrows, documents get the page keys.
 
 Got it wrong? Tap a different mode in the popup — it applies instantly.
 
+### Why PDFs are handled differently
+
+Chrome opens a PDF fit to **width**, so one page is taller than the window and
+PageDown scrolls a screenful — which leaves you looking at the bottom half of one
+page and the top half of the next. Instead of pressing a key, PDF mode asks the
+viewer for a page number outright (`#page=4&view=Fit`). That is exact at any zoom,
+and `view=Fit` sizes each page to the window, so one tap shows one whole page.
+
+The extension counts pages itself, starting from page 1 when the session opens.
+Scrolling the PDF by hand with the mouse puts that count out of step — tap
+**Start** on the phone to snap back to page 1. If the fragment navigation ever
+misbehaves on a particular file, switch the popup to **Doc** mode and it falls
+back to plain page keys.
+
 The four small buttons on the phone are **Start** (jump to the beginning),
 **Blank** (black the screen), **Full** (toggle the window fullscreen) and
 **End** (jump to the last page).
 
 ## Known limits
 
+- **The end of a PDF is a key press, not a jump.** Nothing exposes the page
+  count, so **End** sends the End key rather than a page number.
 - **Blank does not work on a PDF.** In a deck it sends `B`, which is what
   PowerPoint and Slides listen for. Chrome's PDF viewer has no such key, and no
   extension can paint over it. Everywhere else it drops a black overlay.
@@ -116,8 +132,8 @@ The four small buttons on the phone are **Start** (jump to the beginning),
 - **Local PDFs** (`file://…`) need *Allow access to file URLs* switched on for
   the extension in `chrome://extensions`.
 - **Anyone with the code can tap.** That is the point — it is a classroom, not a
-  bank. Names are attached to every command, and **New code** takes the room
-  back.
+  bank. Scanning the QR is the whole handshake, so there is nothing to identify
+  who is tapping; **New code** is how you take the room back.
 
 ## How it is put together
 

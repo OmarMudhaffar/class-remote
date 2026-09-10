@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Class Remote</title>
-<meta name="theme-color" content="#0B0F14">
+<meta name="theme-color" content="#14003E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,8 +12,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap">
 <style>
   :root{
-    --bg:#0B0F14; --card:#141B23; --line:#22303C; --mint:#1FD98A;
-    --hi:#EAF0F5; --lo:#8A97A6; --faint:#55636F; --ink:#04120A;
+    --bg:#14003E; --card:#240759; --line:#371675;
+    --accent:#9067FF; --accent-deep:#6233C1; --accent-mid:#7A47EA; --accent-soft:#A78BFF;
+    --hi:#F5F1FF; --lo:#BFAEFF; --faint:#8874C4; --ink:#FFFFFF;
     --mono:ui-monospace,SFMono-Regular,Menlo,"JetBrains Mono",monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -28,7 +29,7 @@
   .bar{display:flex;align-items:center;gap:9px;padding:2px 6px 9px;flex:none}
   .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none;
        transition:background .25s,box-shadow .25s}
-  .dot.on{background:var(--mint);box-shadow:0 0 0 4px rgba(31,217,138,.15)}
+  .dot.on{background:var(--accent);box-shadow:0 0 0 4px rgba(144,103,255,.20)}
   .who{font-size:12px;color:var(--lo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .tag{margin-left:auto;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--faint)}
 
@@ -38,11 +39,11 @@
         transition:transform .09s ease,background .12s ease,border-color .12s ease;
         cursor:pointer;padding:0}
   .zone:active{transform:scale(.985)}
-  .zone.hit{background:rgba(31,217,138,.14);border-color:var(--mint)}
+  .zone.hit{background:rgba(144,103,255,.18);border-color:var(--accent)}
   #back{flex:1 1 0;color:var(--lo)}
-  #next{flex:2.1 1 0;margin-top:9px;background:linear-gradient(180deg,#1FD98A,#12B872);
+  #next{flex:2.1 1 0;margin-top:9px;background:linear-gradient(180deg,#7A47EA,#6233C1);
         color:var(--ink);border:none;font-size:19px;
-        box-shadow:0 14px 34px -14px rgba(31,217,138,.65)}
+        box-shadow:0 14px 34px -14px rgba(122,71,234,.75)}
   #next.hit{filter:brightness(1.12)}
   .arrow{font-size:22px;opacity:.85;line-height:1}
 
@@ -51,10 +52,10 @@
         background:var(--card);color:var(--lo);font:600 11px/1.35 inherit;
         letter-spacing:.09em;text-transform:uppercase;cursor:pointer}
   .tools button:active{background:#1B242E;color:var(--hi)}
-  .tools button.on{border-color:var(--mint);color:var(--mint)}
+  .tools button.on{border-color:var(--accent);color:var(--accent-soft)}
 
   .sig{flex:none;text-align:center;padding-top:9px;pointer-events:none}
-  .sig .hand{font-family:"Caveat",ui-rounded,cursive;font-size:26px;color:var(--mint);
+  .sig .hand{font-family:"Caveat",ui-rounded,cursive;font-size:26px;color:var(--accent-soft);
              line-height:1;opacity:.94}
   .sig .rule{width:64px;height:1px;background:var(--line);margin:6px auto 0}
   .sig .meta{font:10px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;
@@ -71,7 +72,7 @@
              border:1px solid var(--line);color:var(--hi);font:600 17px/1 inherit;
              text-align:center;margin-bottom:9px}
   .box input.code{font-family:var(--mono);letter-spacing:.3em;text-transform:uppercase}
-  .box button{width:100%;padding:15px;border-radius:13px;border:none;background:var(--mint);
+  .box button{width:100%;padding:15px;border-radius:13px;border:none;background:var(--accent-mid);
               color:var(--ink);font:800 16px/1 inherit;cursor:pointer}
   .box .err{color:#FF7A93;font-size:12px;min-height:16px;margin-top:9px}
 
@@ -115,8 +116,7 @@
 <div class="gate" id="gate">
   <div class="box">
     <h1>Take the remote</h1>
-    <p>Your name shows on the presenter's screen.</p>
-    <input id="nameIn" placeholder="Your name" autocomplete="name" maxlength="18">
+    <p>Scan the code on the screen, or type it here.</p>
     <input id="codeIn" class="code" placeholder="CODE" maxlength="4" autocapitalize="characters" spellcheck="false">
     <button id="join">Connect</button>
     <div class="err" id="err"></div>
@@ -132,8 +132,6 @@
   if (Q.get('db')) DB = Q.get('db').replace(/\/+$/, '');
 
   var code = (location.hash || '').replace(/^#\/?/, '').trim().toUpperCase();
-  var name = '';
-  try { name = localStorage.getItem('cr.name') || ''; } catch (e) {}
 
   var el = function (id) { return document.getElementById(id); };
   var es = null, lastHostAt = 0, tick = null;
@@ -142,7 +140,7 @@
 
   function sendCmd(a, extra) {
     if (!code) return;
-    var body = { a: a, by: name || 'Someone', n: { '.sv': 'timestamp' } };
+    var body = { a: a, n: { '.sv': 'timestamp' } };
     if (extra) for (var k in extra) body[k] = extra[k];
     fetch(DB + '/sessions/' + code + '/cmd.json', {
       method: 'PUT',
@@ -229,8 +227,8 @@
     el('dot').classList.toggle('on', up);
     el('tag').textContent = code;
     if (!up) { el('who').textContent = 'session ended'; return; }
-    var holder = h.holder && h.holder !== name ? h.holder + ' is driving' : 'you have the remote';
-    el('who').textContent = (h.name ? h.name + ' · ' : '') + holder;
+    var where = h.page ? ' · page ' + h.page : '';
+    el('who').textContent = (h.name || 'connected') + where;
     Array.prototype.forEach.call(document.querySelectorAll('.tools button'), function (b) {
       if (b.dataset.a === 'blank') b.classList.toggle('on', !!h.blank);
     });
@@ -259,12 +257,9 @@
   }
 
   el('join').addEventListener('click', function () {
-    var n = el('nameIn').value.trim();
     var c = el('codeIn').value.trim().toUpperCase();
-    if (!n) { el('err').textContent = 'Put your name in first.'; return; }
     if (!/^[A-Z0-9]{4}$/.test(c)) { el('err').textContent = 'The code is 4 characters.'; return; }
-    name = n; code = c;
-    try { localStorage.setItem('cr.name', n); } catch (e) {}
+    code = c;
     start();
   });
 
@@ -272,9 +267,9 @@
     if (e.key === 'Enter') el('join').click();
   });
 
-  if (name) el('nameIn').value = name;
   if (code) el('codeIn').value = code;
-  if (name && /^[A-Z0-9]{4}$/.test(code)) start();
+  // Scanning the QR is the whole handshake — the link carries the code.
+  if (/^[A-Z0-9]{4}$/.test(code)) start();
 })();
 </script>
 </body>

@@ -3,7 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const send = (msg) => new Promise((res) => chrome.runtime.sendMessage(msg, res));
 
-const MODE_LABEL = { slides: 'Arrow keys', doc: 'Page keys', video: 'Video keys' };
+const MODE_LABEL = { pdf: 'Page by page', slides: 'Arrow keys', doc: 'Page keys', video: 'Video keys' };
 
 function drawQR(url) {
   const box = $('qr');
@@ -33,11 +33,14 @@ async function paint() {
 
   if (live) {
     $('target').textContent = S.title || S.name;
-    $('targetSub').textContent = S.name + ' · ' + (MODE_LABEL[S.mode] || '');
+    $('targetSub').textContent = S.name + ' · ' + (MODE_LABEL[S.mode] || '') +
+      (S.mode === 'pdf' && S.page ? ' · page ' + S.page : '');
     $('code').textContent = S.code;
     $('link').textContent = res.remoteUrl;
     drawQR(res.remoteUrl);
-    $('holder').textContent = S.holder ? ('Remote held by ' + S.holder) : 'Nobody has picked it up yet.';
+    const ago = S.lastAt ? Math.round((Date.now() - S.lastAt) / 1000) : null;
+    $('holder').textContent = ago == null ? 'Waiting for the first tap.'
+      : ago < 5 ? 'Just tapped.' : 'Last tap ' + (ago < 90 ? ago + 's' : Math.round(ago / 60) + 'm') + ' ago.';
     const limited = S.driver !== 'debugger';
     $('warn').classList.toggle('hide', !limited);
     if (limited) {
