@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Class Remote",
+  "version": "1.0.0",
+  "description": "Hand your phone to whoever is presenting. Controls whatever this laptop is showing — PDF, Slides, PowerPoint, Word, video.",
+  "permissions": [
+    "debugger",
+    "scripting",
+    "tabs",
+    "storage",
+    "offscreen",
+    "alarms"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Class Remote"
+  },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "commands": {
+    "toggle-session": {
+      "suggested_key": { "default": "Alt+Shift+R" },
+      "description": "Start or stop the remote session on the current tab"
+    }
+  }
+}

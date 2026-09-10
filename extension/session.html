@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Class Remote — scan to control</title>
+<style>
+  :root{--bg:#0B0F14;--mint:#1FD98A;--hi:#EAF0F5;--lo:#7C8896;--line:#22303C}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--hi);display:flex;align-items:center;
+       justify-content:center;
+       font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .stage{text-align:center;padding:40px}
+  .eyebrow{font:500 clamp(11px,1.1vw,14px)/1 ui-monospace,Menlo,monospace;
+           letter-spacing:.3em;text-transform:uppercase;color:var(--mint);margin-bottom:26px}
+  #qr{background:#fff;border-radius:22px;padding:18px;display:inline-flex;
+      box-shadow:0 30px 70px -20px rgba(0,0,0,.8)}
+  #qr svg{display:block;width:clamp(220px,30vw,340px);height:clamp(220px,30vw,340px)}
+  .code{font:800 clamp(56px,9vw,120px)/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+        letter-spacing:.16em;margin:30px 0 8px}
+  .url{font:clamp(13px,1.4vw,18px)/1.5 ui-monospace,Menlo,monospace;color:var(--lo)}
+  .hint{margin-top:30px;color:var(--lo);font-size:clamp(13px,1.3vw,17px)}
+  .off{color:#FF7A93}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="eyebrow">Scan to take the remote</div>
+    <div id="qr"></div>
+    <div class="code" id="code">····</div>
+    <div class="url" id="url"></div>
+    <div class="hint" id="hint">Open it on your phone. Tap the bottom half to go forward.</div>
+  </div>
+<script src="vendor/qrcode.js"></script>
+<script src="session.js"></script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Class Remote</title>
+<meta name="theme-color" content="#0B0F14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap">
+<style>
+  :root{
+    --bg:#0B0F14; --card:#141B23; --line:#22303C; --mint:#1FD98A;
+    --hi:#EAF0F5; --lo:#8A97A6; --faint:#55636F; --ink:#04120A;
+    --mono:ui-monospace,SFMono-Regular,Menlo,"JetBrains Mono",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{margin:0;background:var(--bg);color:var(--hi);
+       font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+       user-select:none;-webkit-user-select:none;touch-action:manipulation}
+
+  #app{display:flex;flex-direction:column;height:100dvh;
+       padding:calc(env(safe-area-inset-top) + 8px) 10px calc(env(safe-area-inset-bottom) + 6px)}
+
+  .bar{display:flex;align-items:center;gap:9px;padding:2px 6px 9px;flex:none}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none;
+       transition:background .25s,box-shadow .25s}
+  .dot.on{background:var(--mint);box-shadow:0 0 0 4px rgba(31,217,138,.15)}
+  .who{font-size:12px;color:var(--lo);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tag{margin-left:auto;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--faint)}
+
+  .zone{flex:none;border:1px solid var(--line);background:var(--card);color:var(--hi);
+        border-radius:18px;font:800 15px/1 inherit;letter-spacing:.18em;text-transform:uppercase;
+        display:flex;align-items:center;justify-content:center;gap:10px;
+        transition:transform .09s ease,background .12s ease,border-color .12s ease;
+        cursor:pointer;padding:0}
+  .zone:active{transform:scale(.985)}
+  .zone.hit{background:rgba(31,217,138,.14);border-color:var(--mint)}
+  #back{flex:1 1 0;color:var(--lo)}
+  #next{flex:2.1 1 0;margin-top:9px;background:linear-gradient(180deg,#1FD98A,#12B872);
+        color:var(--ink);border:none;font-size:19px;
+        box-shadow:0 14px 34px -14px rgba(31,217,138,.65)}
+  #next.hit{filter:brightness(1.12)}
+  .arrow{font-size:22px;opacity:.85;line-height:1}
+
+  .tools{flex:none;display:flex;gap:7px;margin-top:9px}
+  .tools button{flex:1;padding:13px 4px;border-radius:13px;border:1px solid var(--line);
+        background:var(--card);color:var(--lo);font:600 11px/1.35 inherit;
+        letter-spacing:.09em;text-transform:uppercase;cursor:pointer}
+  .tools button:active{background:#1B242E;color:var(--hi)}
+  .tools button.on{border-color:var(--mint);color:var(--mint)}
+
+  .sig{flex:none;text-align:center;padding-top:9px;pointer-events:none}
+  .sig .hand{font-family:"Caveat",ui-rounded,cursive;font-size:23px;color:var(--mint);
+             line-height:1;opacity:.92}
+  .sig .rule{width:52px;height:1px;background:var(--line);margin:5px auto 4px}
+  .sig .meta{font:10px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;
+             color:var(--faint)}
+
+  /* Gate: name + code, shown until the remote is usable. */
+  .gate{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;
+        align-items:center;justify-content:center;padding:26px}
+  .gate.hide{display:none}
+  .box{width:100%;max-width:330px;text-align:center}
+  .box h1{font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
+  .box p{color:var(--lo);font-size:14px;margin:0 0 20px}
+  .box input{width:100%;padding:15px;border-radius:13px;background:var(--card);
+             border:1px solid var(--line);color:var(--hi);font:600 17px/1 inherit;
+             text-align:center;margin-bottom:9px}
+  .box input.code{font-family:var(--mono);letter-spacing:.3em;text-transform:uppercase}
+  .box button{width:100%;padding:15px;border-radius:13px;border:none;background:var(--mint);
+              color:var(--ink);font:800 16px/1 inherit;cursor:pointer}
+  .box .err{color:#FF7A93;font-size:12px;min-height:16px;margin-top:9px}
+
+  /* Landscape: the phone turns, the zones turn with it. */
+  @media (orientation:landscape) and (max-height:520px){
+    #app{flex-direction:row-reverse;align-items:stretch}
+    .bar{display:none}
+    #next{margin-top:0;flex:2.1 1 0}
+    #back{flex:1 1 0;margin-right:9px}
+    .tools{flex-direction:column;margin-top:0;margin-right:9px;width:74px}
+    .sig{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="bar">
+    <span class="dot" id="dot"></span>
+    <span class="who" id="who">connecting…</span>
+    <span class="tag" id="tag"></span>
+  </div>
+
+  <button class="zone" id="back"><span class="arrow">▲</span> Back</button>
+
+  <div class="tools">
+    <button data-a="first">Start</button>
+    <button data-a="blank">Blank</button>
+    <button data-a="full">Full</button>
+    <button data-a="last">End</button>
+  </div>
+
+  <button class="zone" id="next">Next <span class="arrow">▼</span></button>
+
+  <div class="sig">
+    <div class="hand">Omar</div>
+    <div class="rule"></div>
+    <div class="meta">Omar Mudhaffar · Heaft</div>
+  </div>
+</div>
+
+<div class="gate" id="gate">
+  <div class="box">
+    <h1>Take the remote</h1>
+    <p>Your name shows on the presenter's screen.</p>
+    <input id="nameIn" placeholder="Your name" autocomplete="name" maxlength="18">
+    <input id="codeIn" class="code" placeholder="CODE" maxlength="4" autocapitalize="characters" spellcheck="false">
+    <button id="join">Connect</button>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DB = 'https://heaft-app-default-rtdb.firebaseio.com';
+  var Q  = new URLSearchParams(location.search);
+  if (Q.get('db')) DB = Q.get('db').replace(/\/+$/, '');
+
+  var code = (location.hash || '').replace(/^#\/?/, '').trim().toUpperCase();
+  var name = '';
+  try { name = localStorage.getItem('cr.name') || ''; } catch (e) {}
+
+  var el = function (id) { return document.getElementById(id); };
+  var es = null, lastHostAt = 0, tick = null;
+
+  /* ---- sending ---------------------------------------------------- */
+
+  function sendCmd(a, extra) {
+    if (!code) return;
+    var body = { a: a, by: name || 'Someone', n: { '.sv': 'timestamp' } };
+    if (extra) for (var k in extra) body[k] = extra[k];
+    fetch(DB + '/sessions/' + code + '/cmd.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).catch(function () { flashErr(); });
+  }
+
+  function flashErr() {
+    el('dot').classList.remove('on');
+    el('who').textContent = 'lost the laptop — retrying';
+  }
+
+  /* ---- feedback --------------------------------------------------- */
+
+  function hit(node) {
+    node.classList.add('hit');
+    setTimeout(function () { node.classList.remove('hit'); }, 130);
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  }
+
+  function wire(node, action) {
+    // pointerdown, not click: the tap should land the instant the finger does.
+    node.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      hit(node);
+      sendCmd(action);
+    });
+  }
+
+  wire(el('next'), 'next');
+  wire(el('back'), 'prev');
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tools button'), function (b) {
+    b.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      hit(b);
+      sendCmd(b.dataset.a);
+    });
+  });
+
+  // Physical keys too, for anyone holding a clicker or a laptop.
+  document.addEventListener('keydown', function (e) {
+    var map = { ArrowRight: 'next', ArrowDown: 'next', PageDown: 'next', ' ': 'next',
+                ArrowLeft: 'prev', ArrowUp: 'prev', PageUp: 'prev' };
+    if (map[e.key]) { e.preventDefault(); sendCmd(map[e.key]); hit(el(map[e.key] === 'next' ? 'next' : 'back')); }
+  });
+
+  /* ---- listening to the laptop ------------------------------------ */
+
+  function watchHost() {
+    if (es) { try { es.close(); } catch (e) {} }
+    try {
+      es = new EventSource(DB + '/sessions/' + code + '/host.json');
+      es.addEventListener('put', onHost);
+      es.addEventListener('patch', onHost);
+      es.onerror = function () { /* EventSource reconnects itself */ };
+    } catch (e) { /* polling below covers it */ }
+
+    if (tick) clearInterval(tick);
+    tick = setInterval(function () {
+      // The laptop republishes every ~20s; if that stops, say so.
+      if (lastHostAt && Date.now() - lastHostAt > 45000) {
+        el('dot').classList.remove('on');
+        el('who').textContent = 'laptop went quiet';
+      }
+      fetch(DB + '/sessions/' + code + '/host.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(applyHost)
+        .catch(function () {});
+    }, 10000);
+  }
+
+  function onHost(e) {
+    var msg;
+    try { msg = JSON.parse(e.data); } catch (err) { return; }
+    applyHost(msg && msg.data);
+  }
+
+  function applyHost(h) {
+    if (!h || typeof h !== 'object') return;
+    lastHostAt = Date.now();
+    var up = h.up !== false;
+    el('dot').classList.toggle('on', up);
+    el('tag').textContent = code;
+    if (!up) { el('who').textContent = 'session ended'; return; }
+    var holder = h.holder && h.holder !== name ? h.holder + ' is driving' : 'you have the remote';
+    el('who').textContent = (h.name ? h.name + ' · ' : '') + holder;
+    Array.prototype.forEach.call(document.querySelectorAll('.tools button'), function (b) {
+      if (b.dataset.a === 'blank') b.classList.toggle('on', !!h.blank);
+    });
+  }
+
+  /* ---- keep the screen on ----------------------------------------- */
+
+  var lock = null;
+  function keepAwake() {
+    if (!('wakeLock' in navigator)) return;
+    navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') keepAwake();
+  });
+
+  /* ---- gate -------------------------------------------------------- */
+
+  function start() {
+    el('gate').classList.add('hide');
+    el('tag').textContent = code;
+    location.hash = '#' + code;
+    watchHost();
+    keepAwake();
+    sendCmd('hello');
+  }
+
+  el('join').addEventListener('click', function () {
+    var n = el('nameIn').value.trim();
+    var c = el('codeIn').value.trim().toUpperCase();
+    if (!n) { el('err').textContent = 'Put your name in first.'; return; }
+    if (!/^[A-Z0-9]{4}$/.test(c)) { el('err').textContent = 'The code is 4 characters.'; return; }
+    name = n; code = c;
+    try { localStorage.setItem('cr.name', n); } catch (e) {}
+    start();
+  });
+
+  el('codeIn').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') el('join').click();
+  });
+
+  if (name) el('nameIn').value = name;
+  if (code) el('codeIn').value = code;
+  if (name && /^[A-Z0-9]{4}$/.test(code)) start();
+})();
+</script>
+</body>
+</html>

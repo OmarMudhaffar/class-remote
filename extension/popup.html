@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Class Remote</title>
+<style>
+  :root{
+    --bg:#0B0F14; --card:#141B23; --line:#22303C; --mint:#1FD98A;
+    --hi:#EAF0F5; --lo:#8A97A6; --faint:#5A6875; --ink:#04120A;
+  }
+  *{box-sizing:border-box}
+  body{width:320px;margin:0;background:var(--bg);color:var(--hi);
+       font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .pad{padding:16px}
+  .top{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+  .mark{width:26px;height:26px;border-radius:8px;background:var(--card);
+        border:1px solid var(--line);display:flex;align-items:center;
+        justify-content:center;gap:2px}
+  .mark i{display:block;width:2px;border-radius:2px;background:#6B7B8A}
+  .mark i:nth-child(2),.mark i:nth-child(4){height:10px;background:var(--mint)}
+  .mark i:nth-child(3){height:13px;background:#E8EDF2}
+  .mark i:nth-child(1),.mark i:nth-child(5){height:6px}
+  .name{font-weight:800;letter-spacing:.12em;font-size:12px}
+  .dot{margin-left:auto;font-size:11px;color:var(--faint);display:flex;
+       align-items:center;gap:6px;font-variant-numeric:tabular-nums}
+  .dot b{width:7px;height:7px;border-radius:50%;background:var(--faint);display:block}
+  .dot.live b{background:var(--mint);box-shadow:0 0 0 3px rgba(31,217,138,.16)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px}
+  .card + .card{margin-top:10px}
+  .lbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+       margin-bottom:6px}
+  .target{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sub{color:var(--lo);font-size:12px;margin-top:3px;overflow:hidden;
+       text-overflow:ellipsis;white-space:nowrap}
+
+  button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);
+         background:var(--card);color:var(--hi);padding:10px 12px;width:100%}
+  button:hover{border-color:#31414F}
+  .go{background:var(--mint);color:var(--ink);border:none;font-weight:800;padding:12px}
+  .stop{background:transparent;color:#FF7A93;border-color:#43222B}
+
+  .code{font:800 34px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+        letter-spacing:.22em;color:var(--mint);text-align:center;margin:2px 0 10px}
+  #qr{display:flex;justify-content:center;background:#fff;border-radius:10px;padding:8px}
+  #qr svg{display:block;width:150px;height:150px}
+  .link{font:11px/1.4 ui-monospace,Menlo,monospace;color:var(--lo);word-break:break-all;
+        margin-top:9px;text-align:center}
+  .row{display:flex;gap:7px;margin-top:9px}
+  .row button{width:auto;flex:1;padding:8px;font-size:12px}
+
+  .chips{display:flex;gap:6px;margin-top:8px}
+  .chip{flex:1;padding:7px;font-size:11px;text-align:center;border-radius:8px;
+        border:1px solid var(--line);color:var(--lo);cursor:pointer;
+        letter-spacing:.08em;text-transform:uppercase}
+  .chip.on{background:rgba(31,217,138,.13);border-color:var(--mint);color:var(--mint)}
+
+  .warn{margin-top:9px;font-size:11px;line-height:1.5;color:#FFC46B;
+        background:rgba(255,196,107,.08);border:1px solid rgba(255,196,107,.22);
+        border-radius:9px;padding:8px 10px}
+  .hint{font-size:11px;color:var(--faint);margin-top:9px;line-height:1.5}
+  .hide{display:none}
+  a{color:var(--mint)}
+  details{margin-top:10px}
+  summary{font-size:11px;color:var(--faint);cursor:pointer;outline:none}
+  input{width:100%;margin-top:6px;padding:8px;border-radius:8px;background:#0D141B;
+        border:1px solid var(--line);color:var(--hi);font:11px/1.4 ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+<div class="pad">
+
+  <div class="top">
+    <span class="mark"><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="name">CLASS REMOTE</span>
+    <span class="dot" id="dot"><b></b><span id="dotText">idle</span></span>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Controlling</div>
+    <div class="target" id="target">—</div>
+    <div class="sub" id="targetSub"></div>
+    <div class="chips" id="chips">
+      <div class="chip" data-mode="slides">Slides</div>
+      <div class="chip" data-mode="doc">Document</div>
+      <div class="chip" data-mode="video">Video</div>
+    </div>
+  </div>
+
+  <div id="idle">
+    <div class="card" style="margin-top:10px">
+      <button class="go" id="start">Start session</button>
+      <div class="hint">Opens a link + QR. Anyone who scans it can move
+        this tab forward and back. Shortcut: <b>⌥⇧R</b></div>
+    </div>
+  </div>
+
+  <div id="live" class="hide">
+    <div class="card" style="margin-top:10px">
+      <div class="code" id="code">····</div>
+      <div id="qr"></div>
+      <div class="link" id="link"></div>
+      <div class="row">
+        <button id="copy">Copy link</button>
+        <button id="big">Show big</button>
+        <button id="rotate">New code</button>
+      </div>
+      <div class="warn hide" id="warn"></div>
+      <div class="hint" id="holder"></div>
+    </div>
+    <div class="card">
+      <button class="stop" id="stop">End session</button>
+    </div>
+  </div>
+
+  <details>
+    <summary>Settings</summary>
+    <input id="remoteBase" placeholder="https://…/class-remote/" spellcheck="false">
+    <input id="db" placeholder="https://….firebaseio.com" spellcheck="false">
+    <div class="row"><button id="save">Save</button></div>
+  </details>
+
+</div>
+<script src="vendor/qrcode.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
