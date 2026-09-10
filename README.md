@@ -90,7 +90,7 @@ decks get the arrows, documents get the page keys.
 
 | On screen | Mode | Forward / back |
 |---|---|---|
-| PDF (Chrome viewer, local or online) | pdf | jumps to page N ± 1, fitted |
+| PDF (Chrome viewer, local or online) | pdf | PageDown / PageUp |
 | Google Slides | slides | → / ← |
 | PowerPoint & SharePoint | slides | → / ← |
 | Google Docs, Sheets, Office Online | document | PageDown / PageUp |
@@ -101,23 +101,18 @@ decks get the arrows, documents get the page keys.
 
 Got it wrong? Tap a different mode in the popup — it applies instantly.
 
-### Why PDFs are handled differently
+### Getting one whole page per tap on a PDF
 
-Chrome opens a PDF fit to **width**, so one page is taller than the window and
-PageDown scrolls a screenful — which leaves you looking at the bottom half of one
-page and the top half of the next. Instead of pressing a key, PDF mode asks the
-viewer for a page number outright (`#page=4&view=Fit`). That is exact at any zoom,
-and `view=Fit` sizes each page to the window, so one tap shows one whole page.
+Chrome opens a PDF fit to **width**, so a page is taller than the window and
+PageDown scrolls a screenful — leaving you looking at the bottom of one page and
+the top of the next. The fix is on the viewer, not the remote: click the
+**presentation button** in Chrome's PDF toolbar (the ⛶ icon, top right) before
+you start. Each page then fills the screen and one tap moves exactly one page.
 
-The extension counts pages itself, starting from page 1 when the session opens.
-Scrolling the PDF by hand with the mouse puts that count out of step — tap
-**Start** on the phone to snap back to page 1. If the fragment navigation ever
-misbehaves on a particular file, switch the popup to **Doc** mode and it falls
-back to plain page keys.
-
-The four small buttons on the phone are **Start** (jump to the beginning),
-**Blank** (black the screen), **Full** (toggle the window fullscreen) and
-**End** (jump to the last page).
+The extension also asks for `#page=N&view=Fit` when a session opens, which
+Chrome honours on load. It cannot do more than that: changing the fragment on an
+already-open PDF does not move the viewer, and `chrome.tabs.update` reports
+success regardless — so keys, not page numbers, are what drive a PDF here.
 
 ## Known limits
 

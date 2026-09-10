@@ -171,11 +171,16 @@ async function press(name) {
   return sendKeySynthetic(S.tabId, name);
 }
 
-/* ---------- pdf: move by page, not by viewport ----------------------- *
- * Chrome opens PDFs fit to WIDTH, so a page is taller than the window and
- * PageDown scrolls a screenful — landing halfway between two pages. Asking
- * the viewer for a page number instead is exact at any zoom, and view=Fit
- * sizes each page to the window so one tap shows one whole page.
+/* ---------- pdf ------------------------------------------------------ *
+ * Keys drive the viewer — they are the only thing it reliably answers to
+ * once a document is open. Changing the URL fragment on an already-loaded
+ * PDF does NOT move it, and chrome.tabs.update reports success anyway, so
+ * an earlier version of this silently swallowed every tap. Do not go back
+ * to that without checking the page actually moved.
+ *
+ * PageDown scrolls one windowful, which equals one page only when the
+ * viewer is fitting whole pages. pdfFit asks for that on the way in, and
+ * Chrome's own presentation button (in the PDF toolbar) guarantees it.
  * ------------------------------------------------------------------- */
 
 function pageFromUrl(url) {
@@ -183,18 +188,13 @@ function pageFromUrl(url) {
   return m ? parseInt(m[1], 10) : null;
 }
 
-async function pdfGoto(n) {
-  const page = Math.max(1, n);
+async function pdfFit() {
   try {
     const tab = await chrome.tabs.get(S.tabId);
     const base = (tab.url || S.url).split('#')[0];
-    await chrome.tabs.update(S.tabId, { url: base + '#page=' + page + '&view=Fit' });
-    S.page = page;
-    return true;
-  } catch (e) {
-    console.warn('[ClassRemote] pdf navigation failed:', e && e.message);
-    return false;
-  }
+    // Honoured on load; harmless when it is not.
+    await chrome.tabs.update(S.tabId, { url: base + '#page=' + (S.page || 1) + '&view=Fit' });
+  } catch (e) { /* best effort only */ }
 }
 
 /* ---------- blank / fullscreen -------------------------------------- */
@@ -245,10 +245,9 @@ async function run(cmd) {
   const pdf = S.mode === 'pdf';
   if (pdf && S.page == null) S.page = 1;
   switch (cmd.a) {
-    case 'next':  if (!(pdf && await pdfGoto(S.page + 1))) await press(move.next); break;
-    case 'prev':  if (!(pdf && await pdfGoto(S.page - 1))) await press(move.prev); break;
-    case 'first': if (!(pdf && await pdfGoto(1)))          await press(move.first); break;
-    // Nothing tells us the page count, so the end of a PDF is still a key press.
+    case 'next':  await press(move.next);  if (pdf) S.page = (S.page || 1) + 1; break;
+    case 'prev':  await press(move.prev);  if (pdf) S.page = Math.max(1, (S.page || 1) - 1); break;
+    case 'first': await press(move.first); if (pdf) S.page = 1; break;
     case 'last':  await press(move.last); break;
     case 'blank': await doBlank(); break;
     case 'full':  await doFullscreen(); break;
@@ -356,7 +355,7 @@ async function startSession(tabId) {
 
   if (target.mode === 'pdf') {
     S.page = pageFromUrl(tab.url) || 1;
-    await pdfGoto(S.page);          // same page, now fitted to the window
+    await pdfFit();                 // ask the viewer to fit whole pages
   }
   await saveState();
 
