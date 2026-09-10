@@ -37,16 +37,10 @@ in a shell alias or a Shortcut.
 It is live at **https://omarmudhaffar.github.io/class-remote/** — push to `main`
 and Pages redeploys in about a minute.
 
-If you would rather serve it off your own domain, copy it to
-`/var/www/heaft.app/r.html` and it answers at `https://heaft.app/r` with no nginx
-change (the `try_files $uri.html` rule handles it). That needs disk space freed
-on the box first. Whatever URL you use, set it in the extension popup under
-**Settings**.
-
-```bash
-scp -i ~/.ssh/gymai_deploy index.html \
-    root@164.92.231.199:/var/www/heaft.app/r.html
-```
+If you would rather serve it off your own domain, it is a single static file —
+copy it anywhere that serves HTML over HTTPS. Phones need HTTPS for the camera
+to open the link from a QR code. Whatever URL you use, set it in the extension
+popup under **Settings**.
 
 ## 3. Lock down the database (do this once — it is currently wide open)
 
